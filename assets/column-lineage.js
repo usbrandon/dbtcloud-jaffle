@@ -54,7 +54,11 @@
     const selectedField = (focus.columns || []).find(field => field.name === focusColumn);
     if (selectedField && selectedField.transformation) {
       const expression = el('details', null, 'doc-column-lineage-expression');
-      expression.append(el('summary', 'Recorded SQL expression'), el('pre', selectedField.transformation));
+      const pre = el('pre'), code = el('code');
+      if (window.BNRDocumentationCode) code.append(window.BNRDocumentationCode.highlight(selectedField.transformation));
+      else code.textContent = selectedField.transformation;
+      pre.append(code);
+      expression.append(el('summary', 'Recorded SQL expression'), pre);
       panel.append(expression);
     }
     let mode = 'full', zoom = 1, svg = null, graphWidth = 1, graphHeight = 1;
@@ -119,16 +123,18 @@
       const scoped = scope();
       // Prioritize the focus and immediate neighbors before bounding the DOM.
       const near = new Set(scoped.edges.filter(edge => edge.source === focusId || edge.target === focusId).flatMap(edge => [edge.source, edge.target]));
-      const ids = [...scoped.nodes].sort((a, b) => (a === focusId ? -1 : b === focusId ? 1 : Number(near.has(b)) - Number(near.has(a)) || a.localeCompare(b))).slice(0, MAX_MODELS);
+      const ids = [...scoped.nodes].sort((a, b) => (a === focusId ? -1 : b === focusId ? 1 : Number(near.has(b)) - Number(near.has(a)))).slice(0, MAX_MODELS);
       const shown = new Set(ids), columnsById = new Map();
       const perModelLimit = Math.max(1, Math.floor(MAX_FIELDS / ids.length));
+      const mappedNames = new Map();
+      for (const edge of scoped.edges) for (const side of ['source', 'target']) {
+        if (!mappedNames.has(edge[side])) mappedNames.set(edge[side], new Set());
+        mappedNames.get(edge[side]).add(edge[side + '_column']);
+      }
       let totalFields = 0;
       for (const id of scoped.nodes) {
         const declared = new Map((byId.get(id).columns || []).map(field => [field.name, field]));
-        for (const edge of scoped.edges) {
-          if (edge.source === id && !declared.has(edge.source_column)) declared.set(edge.source_column, { name: edge.source_column });
-          if (edge.target === id && !declared.has(edge.target_column)) declared.set(edge.target_column, { name: edge.target_column });
-        }
+        for (const name of mappedNames.get(id) || []) if (!declared.has(name)) declared.set(name, { name });
         if (id === focusId && focusColumn != null && !declared.has(focusColumn)) declared.set(focusColumn, { name: focusColumn });
         let columns = [...declared.values()].filter(field => focusColumn == null || scoped.fields.has(cellKey(id, field.name)));
         totalFields += columns.length;
@@ -144,6 +150,7 @@
       else if (!scoped.edges.length) notice.textContent = focusColumn == null ? 'No mapped column lineage connects this model.' : 'No mapped lineage was recorded for ' + focus.name + '.' + focusColumn + '.';
       else notice.textContent = (limited ? 'Showing ' : '') + ids.length + ' of ' + scoped.nodes.size + ' models · ' + visibleFields.size + ' of ' + totalFields + ' fields · ' + edges.length + ' of ' + scoped.edges.length + ' mapped connections.' + (limited ? ' This graph is limited for readability. Use Direct only or select a field to narrow it.' : '');
       if (!scoped.edges.length && focusColumn != null) notice.textContent = 'No mapped lineage was recorded for ' + focus.name + '.' + focusColumn + '.';
+      if (limited && !scoped.edges.length) notice.textContent += ' Showing ' + visibleFields.size + ' of ' + totalFields + ' fields. Select a field from the documentation table to inspect it individually.';
       const parents = new Map(ids.map(id => [id, []]));
       edges.forEach(edge => { if (edge.source !== edge.target) parents.get(edge.target).push(edge.source); });
       const depths = new Map(), visiting = new Set();
@@ -196,6 +203,8 @@
       viewport.replaceChildren(svg); zoom = 1; viewport.scrollLeft = 0; viewport.scrollTop = 0;
     }
     render();
+    // The caller appends the panel synchronously; fit once dimensions exist.
+    window.requestAnimationFrame(() => { if (panel.isConnected && viewport.clientWidth > 0) fit(); });
     return panel;
   }
   window.BNRDocumentationLineage = { create };
