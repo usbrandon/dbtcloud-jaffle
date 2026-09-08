@@ -4,3 +4,5 @@ select
     order_date,
     status
 from {{ source('jaffle_shop', 'orders') }}
+
+{{ config(schema='L1_JAFFLE_SHOP', alias='stg_orders') }}

@@ -1,0 +1,10 @@
+version: 2
+models:
+- name: stg_customers
+  description: This model cleans up customer data
+  columns:
+  - name: customer_id
+    description: Primary key
+    data_tests:
+    - unique
+    - not_null
