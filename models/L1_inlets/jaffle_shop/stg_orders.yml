@@ -1,0 +1,27 @@
+version: 2
+models:
+- name: stg_orders
+  description: This model cleans up order data
+  columns:
+  - name: order_id
+    description: Primary key
+    data_tests:
+    - unique
+    - not_null
+  - name: status
+    data_tests:
+    - accepted_values:
+        arguments:
+          values:
+          - placed
+          - shipped
+          - completed
+          - return_pending
+          - returned
+  - name: customer_id
+    data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('stg_customers')
+          field: customer_id
