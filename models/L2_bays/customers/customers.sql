@@ -1,3 +1,13 @@
+/*
+  Customer dimension model.
+
+  Each row provides customer attributes and aggregated order metrics.
+  Original grain: one record per customer.
+  Sources: stg_customers (customer attributes) and stg_orders (order behavior).
+  Enriched columns: first_order_date, most_recent_order_date, number_of_orders.
+  This L2 model is intended for reuse across analytical use cases.
+*/
+
 with customers as (
     select * from {{ ref('stg_customers') }}
 ),
