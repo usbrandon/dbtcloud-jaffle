@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: Order‑grain fact table representing individual orders.
+    columns:
+      - name: order_id
+        description: Business key for the order
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Foreign key to the customer dimension
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customer')
+              field: customer_id
+      - name: order_date
+        description: Date the order was placed
+      - name: order_status
+        description: Current status of the order
+      - name: order_count
+        description: Count of orders – always 1 per fact row, additive

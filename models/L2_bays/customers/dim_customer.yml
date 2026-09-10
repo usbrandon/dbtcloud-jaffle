@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: dim_customer
+    description: Customer dimension providing current‑state attributes and aggregated order metrics.
+    columns:
+      - name: customer_id
+        description: Business key for the customer
+        tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: Customer's first name
+      - name: last_name
+        description: Customer's last name
+      - name: first_order_date
+        description: Date of the customer's first order (NULL when customer hasn't placed an order)
+      - name: most_recent_order_date
+        description: Date of the customer's most recent order (NULL when customer hasn't placed an order)
+      - name: number_of_orders
+        description: Total count of orders placed by this customer across all statuses
